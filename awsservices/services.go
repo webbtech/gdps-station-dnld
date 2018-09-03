@@ -59,7 +59,7 @@ func (s *S3Service) GetSignedURL(prefix string, file *bytes.Buffer) (signedURL s
 
 	_, err = s.PutFile(prefix, file)
 	if err != nil {
-		log.Errorf("Failed to upload file:", err)
+		log.Errorf("Failed to upload file: %s", err.Error())
 		return "", err
 	}
 
@@ -71,7 +71,7 @@ func (s *S3Service) GetSignedURL(prefix string, file *bytes.Buffer) (signedURL s
 
 	urlStr, err := req.Presign(15 * time.Minute)
 	if err != nil {
-		log.Errorf("Failed to sign request", err)
+		log.Errorf("Failed to sign request: %s", err.Error())
 		return "", err
 	}
 

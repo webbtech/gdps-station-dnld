@@ -56,6 +56,10 @@ func (c *Client) FuelSales() (rpt *model.FuelSales, err error) {
 
 	ctx := context.Background()
 	err = c.client.Run(ctx, req, &rpt)
+	if err != nil {
+		log.Errorf("error running graphql client: %s", err.Error())
+		return nil, err
+	}
 
 	sale := rpt.Report.StationSales[0].Sales
 	rpt.FuelTypes = extractSaleKeys(sale)

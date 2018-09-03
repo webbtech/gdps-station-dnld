@@ -1,13 +1,13 @@
 package fuelsale
 
 import (
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/pulpfree/gdps-fs-dwnld/config"
 	"github.com/pulpfree/gdps-fs-dwnld/model"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -42,18 +42,39 @@ func (suite *UnitSuite) SetupTest() {
 	suite.report, err = New(suite.request, suite.c)
 	suite.NoError(err)
 	suite.IsType(new(Report), suite.report)
+
+	err = suite.report.Create()
+	suite.NoError(err)
 }
 
 // TestConfig method
 func (suite *UnitSuite) TestConfig() {
-	assert.NotEqual(suite.T(), "", suite.c.AWSRegion, "Expected AWSRegion to be populated")
+	suite.NotEqual("", suite.c.AWSRegion, "Expected AWSRegion to be populated")
 }
 
-// TestCreateReport method
-func (suite *UnitSuite) TestCreateReport() {
-	url, err := suite.report.Create()
+// TestSaveToDisk method
+func (suite *UnitSuite) TestSaveToDisk() {
+	err := suite.report.Create()
 	suite.NoError(err)
-	suite.NotEqual("", url, "Expected signed url to be populated")
+
+	fp, err := suite.report.SaveToDisk("../tmp")
+	suite.NoError(err)
+	suite.NotEqual("", fp, "Expected file path to be populated")
+}
+
+// TestCreateSignedURL method
+func (suite *UnitSuite) TestCreateSignedURL() {
+	err := suite.report.Create()
+	suite.NoError(err)
+
+	url, err := suite.report.CreateSignedURL()
+	suite.NoError(err)
+	suite.NotEqual("", url, "Expected url to be populated")
+
+	response, err := http.Get(url)
+	suite.NoError(err)
+	defer response.Body.Close()
+	suite.Equal(200, response.StatusCode, "Expect response code to be 200")
 }
 
 // TestUnitSuite function
