@@ -1,0 +1,16 @@
+## User following to get tokens
+aws cognito-idp initiate-auth --region us-east-1 --auth-flow USER_PASSWORD_AUTH --client-id 2084ukslsc831pt202t2dudt7c --auth-parameters USERNAME=pulpfree,PASSWORD=NewPassword1!
+
+sam upgrade
+
+first remove existing node package
+
+$ npm remove aws-sam-local
+
+
+$ which sam
+/usr/local/bin/sam
+
+
+$ ls -l /usr/local/bin/sam
+-rwxr-xr-x  1 rondyck  admin  17436608 11 Apr 13:40 /usr/local/bin/sam
