@@ -424,10 +424,9 @@ func (x *XLSX) OutputFile() (buf bytes.Buffer, err error) {
 }
 
 // OutputToDisk method
-func (x *XLSX) OutputToDisk(filePath string) (err error) {
-
-	err = x.file.SaveAs(filePath)
-	return err
+func (x *XLSX) OutputToDisk(path string) (fp string, err error) {
+	err = x.file.SaveAs(path)
+	return path, err
 }
 
 // ======================== Helper Methods ================================= //

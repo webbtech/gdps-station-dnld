@@ -25,6 +25,7 @@ type Config struct {
 type defaults struct {
 	AWSRegion        string `yaml:"AWSRegion"`
 	S3Bucket         string `yaml:"S3Bucket"`
+	S3FilePrefix     string `yaml:"S3FilePrefix"`
 	CognitoClientID  string `yaml:"CognitoClientID"`
 	CognitoPoolID    string `yaml:"CognitoPoolID"`
 	CognitoRegion    string `yaml:"CognitoRegion"`
@@ -38,6 +39,7 @@ type defaults struct {
 type config struct {
 	AWSRegion       string
 	S3Bucket        string
+	S3FilePrefix    string
 	CognitoClientID string
 	CognitoPoolID   string
 	CognitoRegion   string
@@ -229,6 +231,7 @@ func (c *Config) setFinal() (err error) {
 
 	c.AWSRegion = defs.AWSRegion
 	c.S3Bucket = defs.S3Bucket
+	c.S3FilePrefix = defs.S3FilePrefix
 	c.CognitoClientID = defs.CognitoClientID
 	c.CognitoPoolID = defs.CognitoPoolID
 	c.CognitoRegion = defs.CognitoRegion

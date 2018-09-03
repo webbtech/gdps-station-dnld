@@ -82,7 +82,8 @@ func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		return events.APIGatewayProxyResponse{Body: eRes, Headers: hdrs, StatusCode: 500}, nil
 	}
 
-	url, err := report.Create()
+	var url string
+	err = report.Create()
 	if err != nil {
 		eRes = setErrorResponse(500, "ProcessError", err.Error())
 		return events.APIGatewayProxyResponse{Body: eRes, Headers: hdrs, StatusCode: 500}, nil

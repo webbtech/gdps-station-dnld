@@ -95,4 +95,4 @@ Resources:
           - Effect: Allow
             Action:
             - s3:*
-            Resource: arn:aws:s3:::gales-dips-fuelsale-dwnld/tankfiles/*
+            Resource: arn:aws:s3:::gales-dips-fuelsale-dwnld/reports/*
