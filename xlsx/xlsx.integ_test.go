@@ -80,7 +80,7 @@ func (suite *Suite) TestOutput() {
 	err = suite.file.OverShortAnnual(osa)
 	suite.NoError(err)
 
-	err = suite.file.OutputToDisk(filePath)
+	_, err = suite.file.OutputToDisk(filePath)
 	suite.NoError(err)
 }
 
