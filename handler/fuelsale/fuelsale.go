@@ -1,9 +1,11 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
+	"fmt"
+	"time"
 
+	"github.com/pulpfree/gales-fuelsale-export/auth"
 	"github.com/pulpfree/gdps-fs-dwnld/config"
 	"github.com/pulpfree/gdps-fs-dwnld/fuelsale"
 	"github.com/pulpfree/gdps-fs-dwnld/model"
@@ -16,35 +18,55 @@ import (
 
 var cfg *config.Config
 
-const defaultsFilePath = "./defaults.yaml"
-
 func init() {
-	cfg = &config.Config{
-		DefaultsFilePath: defaultsFilePath,
-	}
+	cfg = &config.Config{}
 	err := cfg.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+// Response data format
+type Response struct {
+	Code      int         `json:"code"`      // HTTP status code
+	Data      interface{} `json:"data"`      // Data payload
+	Message   string      `json:"message"`   // Error or status message
+	Status    string      `json:"status"`    // Status code (error|fail|success)
+	Timestamp int64       `json:"timestamp"` // Machine-readable UTC timestamp in nanoseconds since EPOCH
+}
+
+// SignedURL struct
+type SignedURL struct {
+	URL string `json:"url"`
+}
+
+// HandleRequest function
+func HandleRequest(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	// func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
 	hdrs := make(map[string]string)
 	hdrs["Content-Type"] = "application/json"
-	var err error
-	var eRes string
+	t := time.Now()
 
 	// If this is a ping test, intercept and return
 	if req.HTTPMethod == "GET" {
 		log.Info("Ping test in handleRequest")
-		return events.APIGatewayProxyResponse{Body: "pong", Headers: hdrs, StatusCode: 200}, nil
+		return gatewayResponse(Response{
+			Code:      200,
+			Data:      "pong",
+			Status:    "success",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
 	}
 
 	// Check for auth header
-	/*if req.Headers["Authorization"] == "" {
-		eRes = setErrorResponse(401, "Unauthorized", "Missing Authorization header")
-		return events.APIGatewayProxyResponse{Body: eRes, Headers: hdrs, StatusCode: 401}, nil
+	if req.Headers["Authorization"] == "" {
+		return gatewayResponse(Response{
+			Code:      401,
+			Message:   "Missing Authorization header",
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
 	}
 
 	// Set auth config
@@ -55,58 +77,89 @@ func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		JwtAccessToken: req.Headers["Authorization"],
 	})
 	if err != nil {
-		eRes = setErrorResponse(500, "Authentication", err.Error())
-		return events.APIGatewayProxyResponse{Body: eRes, Headers: hdrs, StatusCode: 500}, nil
+		return gatewayResponse(Response{
+			Code:      500,
+			Message:   fmt.Sprintf("authentication error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
 	}
 
 	// Validate JWT Token
 	err = auth.Validate()
 	if err != nil {
-		eRes = setErrorResponse(401, "Authentication", err.Error())
-		return events.APIGatewayProxyResponse{Body: eRes, Headers: hdrs, StatusCode: 401}, nil
-	}*/
+		return gatewayResponse(Response{
+			Code:      401,
+			Message:   fmt.Sprintf("token validation error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
+	}
 
 	// Set and validate request params
 	var r *model.RequestInput
 	json.Unmarshal([]byte(req.Body), &r)
 	reqVars, err := validate.RequestInput(r)
 	if err != nil {
-		eRes = setErrorResponse(500, "RequestValidation", err.Error())
-		return events.APIGatewayProxyResponse{Body: eRes, Headers: hdrs, StatusCode: 500}, nil
+		return gatewayResponse(Response{
+			Code:      500,
+			Message:   fmt.Sprintf("request validation error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
 	}
 
 	// Process request
-	report, err := fuelsale.New(reqVars, cfg)
+	report, err := fuelsale.New(reqVars, cfg, req.Headers["Authorization"])
 	if err != nil {
-		eRes = setErrorResponse(500, "RequestValidation", err.Error())
-		return events.APIGatewayProxyResponse{Body: eRes, Headers: hdrs, StatusCode: 500}, nil
+		return gatewayResponse(Response{
+			Code:      500,
+			Message:   fmt.Sprintf("report fetch error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
 	}
 
-	var url string
+	// var url string
 	err = report.Create()
 	if err != nil {
-		eRes = setErrorResponse(500, "ProcessError", err.Error())
-		return events.APIGatewayProxyResponse{Body: eRes, Headers: hdrs, StatusCode: 500}, nil
+		return gatewayResponse(Response{
+			Code:      500,
+			Message:   fmt.Sprintf("report create error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
 	}
 
-	return events.APIGatewayProxyResponse{Body: url, Headers: hdrs, StatusCode: 201}, nil
+	url, err := report.CreateSignedURL()
+	if err != nil {
+		return gatewayResponse(Response{
+			Code:      500,
+			Message:   fmt.Sprintf("report create url error: %s", err.Error()),
+			Status:    "error",
+			Timestamp: t.Unix(),
+		}, hdrs), nil
+	}
+	log.Infof("signed url created %s", url)
+
+	return gatewayResponse(Response{
+		Code:      201,
+		Data:      SignedURL{URL: url},
+		Status:    "success",
+		Timestamp: t.Unix(),
+	}, hdrs), nil
 }
 
 func main() {
-	lambda.Start(handleRequest)
+	lambda.Start(HandleRequest)
 }
 
-// ======================== Helper Function ================================= //
+func gatewayResponse(resp Response, hdrs map[string]string) events.APIGatewayProxyResponse {
 
-func setErrorResponse(status int, errType, message string) string {
-
-	err := model.ErrorResponse{
-		Status:  status,
-		Type:    errType,
-		Message: message,
+	body, _ := json.Marshal(&resp)
+	if resp.Status == "error" {
+		log.Errorf("Error: status: %s, code: %d, message: %s", resp.Status, resp.Code, resp.Message)
 	}
-	log.Errorf("Error: status: %d, type: %s, message: %s", err.Status, err.Type, err.Message)
-	res, _ := json.Marshal(&err)
 
-	return string(res)
+	return events.APIGatewayProxyResponse{Body: string(body), Headers: hdrs, StatusCode: resp.Code}
 }

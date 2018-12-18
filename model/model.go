@@ -5,19 +5,10 @@ import "time"
 // FuelTypes var
 var FuelTypes = [4]string{"NL", "SNL", "DSL", "CDSL"}
 
-var x = [5]float64{98, 93, 77, 82, 83}
-
 // RequestInput struct
 type RequestInput struct {
 	Date      string `json:"date"`
 	StationID string `json:"stationID"`
-}
-
-// ErrorResponse struct
-type ErrorResponse struct {
-	Status  int    `json:"status"`
-	Type    string `json:"type"`
-	Message string `json:"message"`
 }
 
 // Request struct
@@ -38,12 +29,12 @@ type FuelSales struct {
 		}
 		SalesSummary map[string]float64
 		SalesTotal   float64
+		FuelTypes    []string
 	} `json:"fuelSaleMonth"`
 	Station struct {
 		ID   string
 		Name string
 	}
-	FuelTypes []string
 }
 
 // FuelDelivery struct
@@ -96,4 +87,26 @@ type OverShortAnnual struct {
 		ID   string
 		Name string
 	}
+}
+
+// FuelSalesList struct
+type FuelSalesList struct {
+	Date   time.Time
+	Report struct {
+		PeriodHeader map[string]map[string]string
+		Sales        []struct {
+			FuelPrices struct {
+				DateStart int64
+				DateEnd   int64
+				Prices    map[string]float64
+				StationID string
+			}
+			Periods map[string]struct {
+				Sales map[string]float64
+			}
+			StationID    string
+			StationName  string
+			StationTotal map[string]float64
+		}
+	} `json:"fuelSaleListReport"`
 }

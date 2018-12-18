@@ -2,6 +2,8 @@ package graphql
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"reflect"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 
 // Client struct
 type Client struct {
+	hdrs    http.Header
 	client  *graphql.Client
 	request *model.Request
 }
@@ -21,10 +24,16 @@ type Client struct {
 const timeLongFrmt = "2006-01-02"
 
 // New graphql client
-func New(req *model.Request, cfg *config.Config) (c *Client) {
+func New(req *model.Request, cfg *config.Config, authToken string) (c *Client) {
+
+	hdrs := http.Header{}
+	if len(authToken) > 0 {
+		hdrs.Add("Authorization", fmt.Sprintf("Bearer %s", authToken))
+	}
 
 	c = &Client{
 		client:  graphql.NewClient(cfg.GraphqlURI),
+		hdrs:    hdrs,
 		request: req,
 	}
 
@@ -41,6 +50,7 @@ func (c *Client) FuelSales() (rpt *model.FuelSales, err error) {
         name
       }
       fuelSaleMonth(date: $date, stationID: $stationID) {
+        fuelTypes
         stationSales {
           date
           sales
@@ -53,6 +63,7 @@ func (c *Client) FuelSales() (rpt *model.FuelSales, err error) {
 
 	req.Var("date", formattedDate(c.request.Date))
 	req.Var("stationID", c.request.StationID)
+	req.Header = c.hdrs
 
 	ctx := context.Background()
 	err = c.client.Run(ctx, req, &rpt)
@@ -61,9 +72,8 @@ func (c *Client) FuelSales() (rpt *model.FuelSales, err error) {
 		return nil, err
 	}
 
-	sale := rpt.Report.StationSales[0].Sales
-	rpt.FuelTypes = extractSaleKeys(sale)
 	rpt.Date = c.request.Date
+	rpt.Report.FuelTypes = sortFuelTypes(rpt.Report.FuelTypes)
 
 	return rpt, err
 }
@@ -90,9 +100,14 @@ func (c *Client) FuelDelivery() (rpt *model.FuelDelivery, err error) {
 
 	req.Var("date", formattedDate(c.request.Date))
 	req.Var("stationID", c.request.StationID)
+	req.Header = c.hdrs
 
 	ctx := context.Background()
 	err = c.client.Run(ctx, req, &rpt)
+	if err != nil {
+		log.Errorf("error running graphql client: %s", err.Error())
+		return nil, err
+	}
 
 	rpt.Report.FuelTypes = sortFuelTypes(rpt.Report.FuelTypes)
 	rpt.Date = c.request.Date
@@ -124,9 +139,14 @@ func (c *Client) OverShortMonth() (rpt *model.OverShortMonth, err error) {
 
 	req.Var("date", formattedDate(c.request.Date))
 	req.Var("stationID", c.request.StationID)
+	req.Header = c.hdrs
 
 	ctx := context.Background()
 	err = c.client.Run(ctx, req, &rpt)
+	if err != nil {
+		log.Errorf("error running graphql client: %s", err.Error())
+		return nil, err
+	}
 
 	rpt.Report.FuelTypes = sortFuelTypes(rpt.Report.FuelTypes)
 	rpt.Date = c.request.Date
@@ -154,11 +174,53 @@ func (c *Client) OverShortAnnual() (rpt *model.OverShortAnnual, err error) {
 
 	req.Var("date", formattedDate(c.request.Date))
 	req.Var("stationID", c.request.StationID)
+	req.Header = c.hdrs
 
 	ctx := context.Background()
 	err = c.client.Run(ctx, req, &rpt)
+	if err != nil {
+		log.Errorf("error running graphql client: %s", err.Error())
+		return nil, err
+	}
 
 	rpt.Report.FuelTypes = sortFuelTypes(rpt.Report.FuelTypes)
+	rpt.Date = c.request.Date
+
+	return rpt, err
+}
+
+// FuelSalesList method
+func (c *Client) FuelSalesList() (rpt *model.FuelSalesList, err error) {
+
+	req := graphql.NewRequest(`
+    query FuelSaleListReport($date: String!) {
+      fuelSaleListReport(date: $date) {
+        periodHeader
+        sales {
+          fuelPrices
+          periods
+          stationID
+          stationName
+          stationTotal
+        }
+        periodTotals
+        totalsByFuel
+      }
+    }
+  `)
+
+	req.Var("date", formattedDate(c.request.Date))
+	req.Header = c.hdrs
+
+	ctx := context.Background()
+	err = c.client.Run(ctx, req, &rpt)
+	if err != nil {
+		log.Errorf("error running graphql client: %s", err.Error())
+		return nil, err
+	}
+	// fmt.Printf("rpt: %+v\n", rpt.Report.Sales[0])
+
+	// rpt.Report.FuelTypes = sortFuelTypes(rpt.Report.FuelTypes)
 	rpt.Date = c.request.Date
 
 	return rpt, err

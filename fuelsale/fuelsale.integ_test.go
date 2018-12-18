@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	date             = "2018-05-01"
+	date             = "2018-08-01"
 	defaultsFilePath = "../config/defaults.yaml"
-	stationID        = "d03224a7-f1df-4863-bcaa-5c6e61af11fc"
-	timeFormat       = "2006-01-02"
+	// stationID        = "449d51e8-23ab-4102-8385-57eb9f31f22f"
+	stationID  = "d03224a7-f1df-4863-bcaa-5c6e61af11fc"
+	timeFormat = "2006-01-02"
 )
 
 // UnitSuite struct
@@ -39,7 +40,7 @@ func (suite *UnitSuite) SetupTest() {
 	suite.NoError(err)
 	suite.IsType(new(config.Config), suite.c)
 
-	suite.report, err = New(suite.request, suite.c)
+	suite.report, err = New(suite.request, suite.c, "")
 	suite.NoError(err)
 	suite.IsType(new(Report), suite.report)
 

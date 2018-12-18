@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	date             = "2018-05-01"
+	date             = "2018-08-01"
 	defaultsFilePath = "../config/defaults.yaml"
-	stationID        = "d03224a7-f1df-4863-bcaa-5c6e61af11fc"
+	stationID        = "449d51e8-23ab-4102-8385-57eb9f31f22f"
 	timeFormat       = "2006-01-02"
 )
 
@@ -23,7 +23,6 @@ type UnitSuite struct {
 	client  *Client
 	cfg     *config.Config
 	request *model.Request
-	// report  *Report
 }
 
 // SetupTest method
@@ -39,7 +38,7 @@ func (suite *UnitSuite) SetupTest() {
 	suite.NoError(err)
 	suite.IsType(new(config.Config), suite.cfg)
 
-	suite.client = New(req, suite.cfg)
+	suite.client = New(req, suite.cfg, "")
 	suite.NoError(err)
 	suite.IsType(new(Client), suite.client)
 }
@@ -70,6 +69,25 @@ func (suite *UnitSuite) TestOverShortAnnual() {
 	res, err := suite.client.OverShortAnnual()
 	suite.NoError(err)
 	suite.IsType(new(model.OverShortAnnual), res)
+}
+
+// TestFuelSalesList method
+func (suite *UnitSuite) TestFuelSalesList() {
+	res, err := suite.client.FuelSalesList()
+	suite.NoError(err)
+	suite.IsType(new(model.FuelSalesList), res)
+
+	hdr := res.Report.PeriodHeader
+	suite.True(hdr["201831"]["startDate"] == "2018-07-29")
+
+	sales := res.Report.Sales
+	suite.True(len(sales) > 0)
+
+	periods := res.Report.Sales[0].Periods
+	suite.True(periods["201831"].Sales["NL"] > 0)
+
+	stationNm := res.Report.Sales[0].StationName
+	suite.True(stationNm != "")
 }
 
 // TestUnitSuite function
