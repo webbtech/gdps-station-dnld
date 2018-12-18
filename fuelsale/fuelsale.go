@@ -14,26 +14,26 @@ import (
 
 // ReportName constant
 const (
-	reportFileName = "DipsReport"
-	timeFrmt       = "2006-01-02"
+	reportFileName = "StationReport"
+	timeFrmt       = "2006-01"
 )
 
 // Report struct
 type Report struct {
-	cfg     *config.Config
-	request *model.Request
-	file    *xlsx.XLSX
-	filenm  string
+	authToken string
+	cfg       *config.Config
+	request   *model.Request
+	file      *xlsx.XLSX
+	filenm    string
 }
 
 // New function
-func New(req *model.Request, cfg *config.Config) (r *Report, err error) {
-
+func New(req *model.Request, cfg *config.Config, authToken string) (r *Report, err error) {
 	r = &Report{
-		cfg:     cfg,
-		request: req,
+		authToken: authToken,
+		cfg:       cfg,
+		request:   req,
 	}
-	r.setFileName()
 	return r, err
 }
 
@@ -41,7 +41,7 @@ func New(req *model.Request, cfg *config.Config) (r *Report, err error) {
 func (r *Report) Create() (err error) {
 
 	// Init graphql and xlsx packages
-	client := graphql.New(r.request, r.cfg)
+	client := graphql.New(r.request, r.cfg, r.authToken)
 	r.file, err = xlsx.NewFile()
 	if err != nil {
 		return err
@@ -53,8 +53,30 @@ func (r *Report) Create() (err error) {
 		log.Errorf("Error fetching FuelSales: %s", err)
 		return err
 	}
+	// Now that we have the station name, we can set
+	// would be nice to do earlier, but requires separate query
+	r.setFileName(fs.Station.Name)
+
 	err = r.file.FuelSales(fs)
 	if err != nil {
+		return err
+	}
+
+	// Fetch and create NL and DSL Fuel Sales by Station
+	fsl, err := client.FuelSalesList()
+	if err != nil {
+		log.Errorf("Error fetching FuelSalesList: %s", err)
+		return err
+	}
+	err = r.file.FuelSalesListNL(fsl)
+	if err != nil {
+		log.Errorf("Error creating FuelSalesListNL: %s", err)
+		return err
+	}
+
+	err = r.file.FuelSalesListDSL(fsl)
+	if err != nil {
+		log.Errorf("Error creating FuelSalesListDSL: %s", err)
 		return err
 	}
 
@@ -123,8 +145,8 @@ func (r *Report) CreateSignedURL() (url string, err error) {
 // ======================== Helper Functions =============================== //
 //
 
-func (r *Report) setFileName() {
-	r.filenm = reportFileName + "_" + r.request.Date.Format(timeFrmt) + ".xlsx"
+func (r *Report) setFileName(stationName string) {
+	r.filenm = stationName + "_" + reportFileName + "_" + r.request.Date.Format(timeFrmt) + ".xlsx"
 }
 
 func (r *Report) getFileName() string {

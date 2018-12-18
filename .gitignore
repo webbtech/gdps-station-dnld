@@ -15,4 +15,7 @@
 
 .env
 dist/
+docs/*
 tmp
+packaged-template.yaml
+scratch

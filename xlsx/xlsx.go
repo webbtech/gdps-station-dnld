@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/360EntSecGroup-Skylar/excelize"
@@ -48,10 +50,12 @@ func (x *XLSX) FuelSales(fs *model.FuelSales) (err error) {
 	xlsx := x.file
 	sheetNm := "Sheet1"
 
+	fuelTypes := fs.Report.FuelTypes
+
 	xlsx.SetSheetName(sheetNm, "Fuel Sales")
 
 	// Merge cells to accommodate width of all fuel types
-	endCell := toChar(len(fs.FuelTypes)+2) + "1"
+	endCell := toChar(len(fuelTypes)+2) + "1"
 	xlsx.MergeCell(sheetNm, "A1", endCell)
 
 	style, _ = xlsx.NewStyle(`{"font":{"bold":true,"size":12}}`)
@@ -67,7 +71,7 @@ func (x *XLSX) FuelSales(fs *model.FuelSales) (err error) {
 	col := 2
 	row := 2
 	style, _ = xlsx.NewStyle(`{"font":{"bold":true}}`)
-	for _, ft := range fs.FuelTypes {
+	for _, ft := range fuelTypes {
 		cell = toChar(col) + strconv.Itoa(row)
 		xlsx.SetCellValue(sheetNm, cell, ft)
 		xlsx.SetCellStyle(sheetNm, cell, cell, style)
@@ -86,7 +90,7 @@ func (x *XLSX) FuelSales(fs *model.FuelSales) (err error) {
 		xlsx.SetCellValue(sheetNm, cell, t.Format(dateDayFormat))
 		col++
 
-		for _, ft := range fs.FuelTypes {
+		for _, ft := range fuelTypes {
 			cell = toChar(col) + strconv.Itoa(row)
 			xlsx.SetCellValue(sheetNm, cell, r.Sales[ft])
 			xlsx.SetCellStyle(sheetNm, cell, cell, style)
@@ -102,7 +106,7 @@ func (x *XLSX) FuelSales(fs *model.FuelSales) (err error) {
 	xlsx.SetCellValue(sheetNm, cell, "")
 	col++
 
-	for _, ft := range fs.FuelTypes {
+	for _, ft := range fuelTypes {
 		cell = toChar(col) + strconv.Itoa(row)
 		xlsx.SetCellValue(sheetNm, cell, fs.Report.SalesSummary[ft])
 		xlsx.SetCellStyle(sheetNm, cell, cell, style)
@@ -126,6 +130,241 @@ func (x *XLSX) FuelSales(fs *model.FuelSales) (err error) {
 	return err
 }
 
+// FuelSalesListNL method
+func (x *XLSX) FuelSalesListNL(fsl *model.FuelSalesList) (err error) {
+
+	var cell string
+	var style int
+
+	wkColWidth := 10.50
+	xlsx := x.file
+	sheetNm := "Sheet2"
+
+	_ = xlsx.NewSheet(sheetNm)
+	xlsx.SetSheetName(sheetNm, "No-Lead Fuel Sales by Station")
+
+	// Merge cells to accommodate title
+	startCell := "A1"
+	endCell := toChar(6) + "1"
+	xlsx.MergeCell(sheetNm, startCell, endCell)
+
+	style, _ = xlsx.NewStyle(`{"font":{"bold":true,"size":12}}`)
+	title := fmt.Sprintf("No-Lead Fuel Sales by Station - %s", fsl.Date.Format("January 2006"))
+	xlsx.SetCellValue(sheetNm, startCell, title)
+	xlsx.SetCellStyle(sheetNm, startCell, endCell, style)
+
+	// Create a sorted struct of week keys we can use to sort our data
+	wkKeys := make([]string, len(fsl.Report.PeriodHeader))
+	c := 0
+	for i := range fsl.Report.PeriodHeader {
+		wkKeys[c] = i
+		c++
+	}
+	sort.Strings(wkKeys)
+
+	// Create header with week data ranges
+	col := 2
+	row := 2
+	periodLen := len(fsl.Report.PeriodHeader)
+	xlsx.SetColWidth(sheetNm, "B", toChar((periodLen*2)+2), wkColWidth)
+
+	startCell = toChar(col) + strconv.Itoa(row)
+	endCell = toChar(col+periodLen) + strconv.Itoa(row)
+	style, _ = xlsx.NewStyle(`{"font":{"color": "#333333"}}`)
+	xlsx.SetCellStyle(sheetNm, startCell, endCell, style)
+
+	for _, wk := range wkKeys {
+		cell = toChar(col) + strconv.Itoa(row)
+		cellNext := toChar(col+1) + strconv.Itoa(row)
+		xlsx.MergeCell(sheetNm, cell, cellNext)
+
+		hdr := fsl.Report.PeriodHeader[wk]
+		cellVal := fmt.Sprintf("%s/%s", hdr["startDate"], hdr["endDate"])
+		xlsx.SetCellValue(sheetNm, cell, cellVal)
+		col = col + 2
+	}
+
+	// Set the first and last column width
+	xlsx.SetColWidth(sheetNm, "A", "A", 11.00)
+	lastCol := toChar(periodLen + 2)
+	xlsx.SetColWidth(sheetNm, lastCol, lastCol, 14.00)
+
+	// Now we can populate
+	col = 1
+	row = 3
+	styleSale, _ := xlsx.NewStyle(`{"number_format": 3}`)
+	styleFuelPrice, _ := xlsx.NewStyle(`{"number_format": 4}`)
+	saleCols := make([]string, len(wkKeys))
+
+	for sc, sales := range fsl.Report.Sales {
+		cell = toChar(col) + strconv.Itoa(row)
+		xlsx.SetCellValue(sheetNm, cell, sales.StationName)
+		col++
+
+		// Loop through weeks
+		saleCells := make([]string, len(wkKeys))
+		for i, wk := range wkKeys {
+			cell = toChar(col) + strconv.Itoa(row)
+			xlsx.SetCellValue(sheetNm, cell, sales.Periods[wk].Sales["NL"])
+			xlsx.SetCellStyle(sheetNm, cell, cell, styleSale)
+			saleCells[i] = cell
+			if sc == 0 {
+				saleCols[i] = toChar(col)
+			}
+			col++
+
+			cell = toChar(col) + strconv.Itoa(row)
+			xlsx.SetCellValue(sheetNm, cell, sales.FuelPrices.Prices[wk])
+			xlsx.SetCellStyle(sheetNm, cell, cell, styleFuelPrice)
+			col++
+
+		}
+
+		// Station summary cell
+		cell = toChar(col) + strconv.Itoa(row)
+		xlsx.SetCellStyle(sheetNm, cell, cell, styleSale)
+		rangeStr := fmt.Sprintf("SUM(%s)", strings.Join(saleCells, "+"))
+		style, _ = xlsx.NewStyle(`{"font":{"bold": true}}`)
+		xlsx.SetCellFormula(sheetNm, cell, rangeStr)
+		xlsx.SetCellStyle(sheetNm, cell, cell, style)
+
+		col = 1
+		row++
+	}
+
+	// Period summary row
+	startRow := strconv.Itoa(3)
+	endRow := strconv.Itoa(row - 1)
+	for _, sc := range saleCols {
+		startCell := sc + startRow
+		endCell := sc + endRow
+		cell = sc + strconv.Itoa(row)
+		rangeStr := fmt.Sprintf("SUM(%s:%s)", startCell, endCell)
+
+		xlsx.SetCellFormula(sheetNm, cell, rangeStr)
+		xlsx.SetCellStyle(sheetNm, cell, cell, style)
+	}
+
+	// Total cell
+	lastCol = toChar((int(periodLen) * 2) + 2)
+	cell = lastCol + strconv.Itoa(row)
+	rangeStr := fmt.Sprintf("SUM(%s%s:%s%s)", lastCol, startRow, lastCol, endRow)
+	xlsx.SetCellFormula(sheetNm, cell, rangeStr)
+	xlsx.SetCellStyle(sheetNm, cell, cell, style)
+
+	return err
+}
+
+// FuelSalesListDSL method
+func (x *XLSX) FuelSalesListDSL(fsl *model.FuelSalesList) (err error) {
+
+	var cell string
+	var style int
+
+	wkColWidth := 21.00
+	xlsx := x.file
+	sheetNm := "Sheet3"
+
+	_ = xlsx.NewSheet(sheetNm)
+	xlsx.SetSheetName(sheetNm, "Diesel Fuel Sales by Station")
+
+	// Merge cells to accommodate title
+	startCell := "A1"
+	endCell := toChar(len(fsl.Report.PeriodHeader)+2) + "1"
+	xlsx.MergeCell(sheetNm, startCell, endCell)
+
+	style, _ = xlsx.NewStyle(`{"font":{"bold":true,"size":12}}`)
+	title := fmt.Sprintf("Diesel Fuel Sales by Station - %s", fsl.Date.Format("January 2006"))
+	xlsx.SetCellValue(sheetNm, startCell, title)
+	xlsx.SetCellStyle(sheetNm, startCell, endCell, style)
+
+	// Create a sorted struct of week keys we can use to sort our data
+	wkKeys := make([]string, len(fsl.Report.PeriodHeader))
+	c := 0
+	for i := range fsl.Report.PeriodHeader {
+		wkKeys[c] = i
+		c++
+	}
+	sort.Strings(wkKeys)
+
+	// Create header with week data ranges
+	col := 2
+	row := 2
+	periodLen := len(fsl.Report.PeriodHeader)
+	xlsx.SetColWidth(sheetNm, "B", toChar((periodLen)+1), wkColWidth)
+
+	startCell = toChar(col) + strconv.Itoa(row)
+	endCell = toChar(col+periodLen) + strconv.Itoa(row)
+	style, _ = xlsx.NewStyle(`{"font":{"color": "#333333"}}`)
+	xlsx.SetCellStyle(sheetNm, startCell, endCell, style)
+
+	for _, wk := range wkKeys {
+		cell = toChar(col) + strconv.Itoa(row)
+		hdr := fsl.Report.PeriodHeader[wk]
+		cellVal := fmt.Sprintf("%s/%s", hdr["startDate"], hdr["endDate"])
+		xlsx.SetCellValue(sheetNm, cell, cellVal)
+		col++
+	}
+
+	// Set the first and last column width
+	xlsx.SetColWidth(sheetNm, "A", "A", 11.00)
+	lastCol := toChar(periodLen + 2)
+	xlsx.SetColWidth(sheetNm, lastCol, lastCol, 14.00)
+
+	// Now we can populate
+	col = 1
+	row = 3
+	styleSale, _ := xlsx.NewStyle(`{"number_format": 3}`)
+	// saleCols := make([]string, len(wkKeys))
+
+	for _, sales := range fsl.Report.Sales {
+
+		if sales.StationTotal["DSL"] <= 0 {
+			continue
+		}
+		cell = toChar(col) + strconv.Itoa(row)
+		xlsx.SetCellValue(sheetNm, cell, sales.StationName)
+		col++
+
+		// Loop through weeks
+		saleCells := make([]string, len(wkKeys))
+		for i, wk := range wkKeys {
+			cell = toChar(col) + strconv.Itoa(row)
+			xlsx.SetCellValue(sheetNm, cell, sales.Periods[wk].Sales["DSL"])
+			xlsx.SetCellStyle(sheetNm, cell, cell, styleSale)
+			saleCells[i] = cell
+			col++
+		}
+
+		// Station summary cell
+		cell = toChar(col) + strconv.Itoa(row)
+		xlsx.SetCellStyle(sheetNm, cell, cell, styleSale)
+		rangeStr := fmt.Sprintf("SUM(%s)", strings.Join(saleCells, "+"))
+		style, _ = xlsx.NewStyle(`{"font":{"bold": true}}`)
+		xlsx.SetCellFormula(sheetNm, cell, rangeStr)
+		xlsx.SetCellStyle(sheetNm, cell, cell, style)
+
+		col = 1
+		row++
+	}
+
+	// Period summary row
+	startRow := strconv.Itoa(3)
+	endRow := strconv.Itoa(row - 1)
+	col = 2
+	for i := 0; i <= len(wkKeys); i++ {
+		cell = toChar(col) + strconv.Itoa(row)
+		startCell := toChar(col) + startRow
+		endCell := toChar(col) + endRow
+		rangeStr := fmt.Sprintf("SUM(%s:%s)", startCell, endCell)
+		xlsx.SetCellFormula(sheetNm, cell, rangeStr)
+		xlsx.SetCellStyle(sheetNm, cell, cell, style)
+		col++
+	}
+
+	return err
+}
+
 // FuelDelivery method
 func (x *XLSX) FuelDelivery(fd *model.FuelDelivery) (err error) {
 
@@ -135,10 +374,9 @@ func (x *XLSX) FuelDelivery(fd *model.FuelDelivery) (err error) {
 	numColWidth := 10.00
 
 	xlsx := x.file
-	sheetNm := "Sheet2"
+	sheetNm := "Sheet4"
 
 	_ = xlsx.NewSheet(sheetNm)
-
 	xlsx.SetSheetName(sheetNm, "Fuel Delivery")
 
 	// Merge cells to accommodate width of all fuel types
@@ -223,7 +461,7 @@ func (x *XLSX) OverShortMonth(os *model.OverShortMonth) (err error) {
 	numColWidth := 10.00
 
 	xlsx := x.file
-	sheetNm := "Sheet3"
+	sheetNm := "Sheet5"
 
 	_ = xlsx.NewSheet(sheetNm)
 
@@ -323,7 +561,7 @@ func (x *XLSX) OverShortAnnual(os *model.OverShortAnnual) (err error) {
 	months := setMonths(os.Report.Year, len(os.Report.Months))
 
 	xlsx := x.file
-	sheetNm := "Sheet4"
+	sheetNm := "Sheet6"
 
 	_ = xlsx.NewSheet(sheetNm)
 

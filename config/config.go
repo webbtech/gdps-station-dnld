@@ -230,12 +230,12 @@ func (c *Config) setDynamo() (err error) {
 func (c *Config) setFinal() (err error) {
 
 	c.AWSRegion = defs.AWSRegion
-	c.S3Bucket = defs.S3Bucket
-	c.S3FilePrefix = defs.S3FilePrefix
 	c.CognitoClientID = defs.CognitoClientID
 	c.CognitoPoolID = defs.CognitoPoolID
 	c.CognitoRegion = defs.CognitoRegion
 	c.GraphqlURI = defs.GraphqlURI
+	c.S3Bucket = defs.S3Bucket
+	c.S3FilePrefix = defs.S3FilePrefix
 	err = c.validateStage()
 
 	return err

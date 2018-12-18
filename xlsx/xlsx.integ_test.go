@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	date             = "2018-05-01"
+	date             = "2018-08-01"
 	defaultsFilePath = "../config/defaults.yaml"
 	filePath         = "../tmp/testfile.xlsx"
 	stationID        = "d03224a7-f1df-4863-bcaa-5c6e61af11fc"
@@ -45,16 +45,21 @@ func (suite *Suite) SetupTest() {
 	suite.NoError(err)
 	suite.IsType(new(XLSX), suite.file)
 
-	suite.graphql = graphql.New(suite.request, suite.cfg)
+	suite.graphql = graphql.New(suite.request, suite.cfg, "")
 	suite.IsType(new(graphql.Client), suite.graphql)
 }
 
 // TestOutput method
 func (suite *Suite) TestOutput() {
 
+	// Fetch all report data
 	fs, err := suite.graphql.FuelSales()
 	suite.NoError(err)
 	suite.IsType(new(model.FuelSales), fs)
+
+	fsl, err := suite.graphql.FuelSalesList()
+	suite.NoError(err)
+	suite.IsType(new(model.FuelSalesList), fsl)
 
 	fd, err := suite.graphql.FuelDelivery()
 	suite.NoError(err)
@@ -68,7 +73,14 @@ func (suite *Suite) TestOutput() {
 	suite.NoError(err)
 	suite.IsType(new(model.OverShortAnnual), osa)
 
+	// Create various sheet tabs
 	err = suite.file.FuelSales(fs)
+	suite.NoError(err)
+
+	err = suite.file.FuelSalesListNL(fsl)
+	suite.NoError(err)
+
+	err = suite.file.FuelSalesListDSL(fsl)
 	suite.NoError(err)
 
 	err = suite.file.FuelDelivery(fd)
