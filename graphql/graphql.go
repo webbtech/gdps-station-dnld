@@ -195,16 +195,37 @@ func (c *Client) FuelSalesList() (rpt *model.FuelSalesList, err error) {
 	req := graphql.NewRequest(`
     query FuelSaleListReport($date: String!) {
       fuelSaleListReport(date: $date) {
-        periodHeader
-        sales {
+        periodHeader {
+          yearWeek
+          startDate
+          endDate
+          week
+        }
+        periodSales {
           fuelPrices
-          periods
+          periods {
+            dates
+            fuelSales {
+              NL
+              DSL
+            }
+          }
           stationID
           stationName
-          stationTotal
+          stationTotal {
+            NL
+            DSL
+          }
         }
-        periodTotals
-        totalsByFuel
+        periodTotals {
+          period
+          NL
+          DSL
+        }
+        totalsByFuel {
+          NL
+          DSL
+        }
       }
     }
   `)
@@ -218,9 +239,6 @@ func (c *Client) FuelSalesList() (rpt *model.FuelSalesList, err error) {
 		log.Errorf("error running graphql client: %s", err.Error())
 		return nil, err
 	}
-	// fmt.Printf("rpt: %+v\n", rpt.Report.Sales[0])
-
-	// rpt.Report.FuelTypes = sortFuelTypes(rpt.Report.FuelTypes)
 	rpt.Date = c.request.Date
 
 	return rpt, err

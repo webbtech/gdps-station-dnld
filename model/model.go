@@ -93,20 +93,38 @@ type OverShortAnnual struct {
 type FuelSalesList struct {
 	Date   time.Time
 	Report struct {
-		PeriodHeader map[string]map[string]string
-		Sales        []struct {
+		PeriodHeader []struct {
+			YearWeek  string
+			StartDate string
+			EndDate   string
+			Week      string
+		}
+		PeriodSales []struct {
 			FuelPrices struct {
 				DateStart int64
 				DateEnd   int64
 				Prices    map[string]float64
 				StationID string
 			}
-			Periods map[string]struct {
-				Sales map[string]float64
+			Periods []struct {
+				Dates struct {
+					YearWeek  string
+					StartDate int64
+					EndDate   int64
+				}
+				FuelSales map[string]float64
 			}
 			StationID    string
 			StationName  string
 			StationTotal map[string]float64
 		}
 	} `json:"fuelSaleListReport"`
+}
+
+// PeriodHeader struct
+type PeriodHeader struct {
+	YearWeek  string
+	StartDate string
+	EndDate   string
+	Week      string
 }
