@@ -77,17 +77,13 @@ func (suite *UnitSuite) TestFuelSalesList() {
 	suite.NoError(err)
 	suite.IsType(new(model.FuelSalesList), res)
 
-	hdr := res.Report.PeriodHeader
-	suite.True(hdr["201831"]["startDate"] == "2018-07-29")
+	hdr := res.Report.PeriodHeader[0]
+	suite.True(hdr.StartDate == "2018-07-29")
 
-	sales := res.Report.Sales
+	sales := res.Report.PeriodSales
 	suite.True(len(sales) > 0)
-
-	periods := res.Report.Sales[0].Periods
-	suite.True(periods["201831"].Sales["NL"] > 0)
-
-	stationNm := res.Report.Sales[0].StationName
-	suite.True(stationNm != "")
+	suite.True(sales[0].Periods[0].FuelSales["NL"] > 0)
+	suite.True(res.Report.PeriodSales[0].StationName != "")
 }
 
 // TestUnitSuite function
