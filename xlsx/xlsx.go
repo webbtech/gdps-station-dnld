@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -55,7 +54,7 @@ func (x *XLSX) FuelSales(fs *model.FuelSales) (err error) {
 	xlsx.SetSheetName(sheetNm, "Fuel Sales")
 
 	// Merge cells to accommodate width of all fuel types
-	endCell := toChar(len(fuelTypes)+2) + "1"
+	endCell := toChar(len(fuelTypes)+3) + "1"
 	xlsx.MergeCell(sheetNm, "A1", endCell)
 
 	style, _ = xlsx.NewStyle(`{"font":{"bold":true,"size":12}}`)
@@ -153,15 +152,6 @@ func (x *XLSX) FuelSalesListNL(fsl *model.FuelSalesList) (err error) {
 	xlsx.SetCellValue(sheetNm, startCell, title)
 	xlsx.SetCellStyle(sheetNm, startCell, endCell, style)
 
-	// Create a sorted struct of week keys we can use to sort our data
-	wkKeys := make([]string, len(fsl.Report.PeriodHeader))
-	c := 0
-	for i := range fsl.Report.PeriodHeader {
-		wkKeys[c] = i
-		c++
-	}
-	sort.Strings(wkKeys)
-
 	// Create header with week data ranges
 	col := 2
 	row := 2
@@ -173,13 +163,12 @@ func (x *XLSX) FuelSalesListNL(fsl *model.FuelSalesList) (err error) {
 	style, _ = xlsx.NewStyle(`{"font":{"color": "#333333"}}`)
 	xlsx.SetCellStyle(sheetNm, startCell, endCell, style)
 
-	for _, wk := range wkKeys {
+	for _, per := range fsl.Report.PeriodHeader {
 		cell = toChar(col) + strconv.Itoa(row)
 		cellNext := toChar(col+1) + strconv.Itoa(row)
 		xlsx.MergeCell(sheetNm, cell, cellNext)
 
-		hdr := fsl.Report.PeriodHeader[wk]
-		cellVal := fmt.Sprintf("%s/%s", hdr["startDate"], hdr["endDate"])
+		cellVal := fmt.Sprintf("%s/%s", per.StartDate, per.EndDate)
 		xlsx.SetCellValue(sheetNm, cell, cellVal)
 		col = col + 2
 	}
@@ -194,18 +183,18 @@ func (x *XLSX) FuelSalesListNL(fsl *model.FuelSalesList) (err error) {
 	row = 3
 	styleSale, _ := xlsx.NewStyle(`{"number_format": 3}`)
 	styleFuelPrice, _ := xlsx.NewStyle(`{"number_format": 4}`)
-	saleCols := make([]string, len(wkKeys))
+	saleCols := make([]string, periodLen)
 
-	for sc, sales := range fsl.Report.Sales {
+	for sc, sales := range fsl.Report.PeriodSales {
 		cell = toChar(col) + strconv.Itoa(row)
 		xlsx.SetCellValue(sheetNm, cell, sales.StationName)
 		col++
 
 		// Loop through weeks
-		saleCells := make([]string, len(wkKeys))
-		for i, wk := range wkKeys {
+		saleCells := make([]string, periodLen)
+		for i, ps := range fsl.Report.PeriodHeader {
 			cell = toChar(col) + strconv.Itoa(row)
-			xlsx.SetCellValue(sheetNm, cell, sales.Periods[wk].Sales["NL"])
+			xlsx.SetCellValue(sheetNm, cell, sales.Periods[i].FuelSales["NL"])
 			xlsx.SetCellStyle(sheetNm, cell, cell, styleSale)
 			saleCells[i] = cell
 			if sc == 0 {
@@ -214,10 +203,9 @@ func (x *XLSX) FuelSalesListNL(fsl *model.FuelSalesList) (err error) {
 			col++
 
 			cell = toChar(col) + strconv.Itoa(row)
-			xlsx.SetCellValue(sheetNm, cell, sales.FuelPrices.Prices[wk])
+			xlsx.SetCellValue(sheetNm, cell, sales.FuelPrices.Prices[ps.YearWeek])
 			xlsx.SetCellStyle(sheetNm, cell, cell, styleFuelPrice)
 			col++
-
 		}
 
 		// Station summary cell
@@ -278,15 +266,6 @@ func (x *XLSX) FuelSalesListDSL(fsl *model.FuelSalesList) (err error) {
 	xlsx.SetCellValue(sheetNm, startCell, title)
 	xlsx.SetCellStyle(sheetNm, startCell, endCell, style)
 
-	// Create a sorted struct of week keys we can use to sort our data
-	wkKeys := make([]string, len(fsl.Report.PeriodHeader))
-	c := 0
-	for i := range fsl.Report.PeriodHeader {
-		wkKeys[c] = i
-		c++
-	}
-	sort.Strings(wkKeys)
-
 	// Create header with week data ranges
 	col := 2
 	row := 2
@@ -298,10 +277,9 @@ func (x *XLSX) FuelSalesListDSL(fsl *model.FuelSalesList) (err error) {
 	style, _ = xlsx.NewStyle(`{"font":{"color": "#333333"}}`)
 	xlsx.SetCellStyle(sheetNm, startCell, endCell, style)
 
-	for _, wk := range wkKeys {
+	for _, per := range fsl.Report.PeriodHeader {
 		cell = toChar(col) + strconv.Itoa(row)
-		hdr := fsl.Report.PeriodHeader[wk]
-		cellVal := fmt.Sprintf("%s/%s", hdr["startDate"], hdr["endDate"])
+		cellVal := fmt.Sprintf("%s/%s", per.StartDate, per.EndDate)
 		xlsx.SetCellValue(sheetNm, cell, cellVal)
 		col++
 	}
@@ -315,9 +293,8 @@ func (x *XLSX) FuelSalesListDSL(fsl *model.FuelSalesList) (err error) {
 	col = 1
 	row = 3
 	styleSale, _ := xlsx.NewStyle(`{"number_format": 3}`)
-	// saleCols := make([]string, len(wkKeys))
 
-	for _, sales := range fsl.Report.Sales {
+	for _, sales := range fsl.Report.PeriodSales {
 
 		if sales.StationTotal["DSL"] <= 0 {
 			continue
@@ -327,10 +304,10 @@ func (x *XLSX) FuelSalesListDSL(fsl *model.FuelSalesList) (err error) {
 		col++
 
 		// Loop through weeks
-		saleCells := make([]string, len(wkKeys))
-		for i, wk := range wkKeys {
+		saleCells := make([]string, periodLen)
+		for i := range fsl.Report.PeriodHeader {
 			cell = toChar(col) + strconv.Itoa(row)
-			xlsx.SetCellValue(sheetNm, cell, sales.Periods[wk].Sales["DSL"])
+			xlsx.SetCellValue(sheetNm, cell, sales.Periods[i].FuelSales["DSL"])
 			xlsx.SetCellStyle(sheetNm, cell, cell, styleSale)
 			saleCells[i] = cell
 			col++
@@ -352,7 +329,7 @@ func (x *XLSX) FuelSalesListDSL(fsl *model.FuelSalesList) (err error) {
 	startRow := strconv.Itoa(3)
 	endRow := strconv.Itoa(row - 1)
 	col = 2
-	for i := 0; i <= len(wkKeys); i++ {
+	for i := 0; i <= periodLen; i++ {
 		cell = toChar(col) + strconv.Itoa(row)
 		startCell := toChar(col) + startRow
 		endCell := toChar(col) + endRow
