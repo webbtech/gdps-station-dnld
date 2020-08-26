@@ -15,7 +15,7 @@
 
 .env
 dist/
-docs/*
-tmp
-packaged-template.yaml
+docs/ssm.md
+package.yaml
 scratch
+tmp

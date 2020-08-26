@@ -2,18 +2,17 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
-	"github.com/pulpfree/gales-fuelsale-export/auth"
-	"github.com/pulpfree/gdps-fs-dwnld/config"
-	"github.com/pulpfree/gdps-fs-dwnld/fuelsale"
-	"github.com/pulpfree/gdps-fs-dwnld/model"
-	"github.com/pulpfree/gdps-fs-dwnld/validate"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/pulpfree/gdps-fs-dwnld/config"
+	"github.com/pulpfree/gdps-fs-dwnld/fuelsale"
+	"github.com/pulpfree/gdps-fs-dwnld/model"
+	"github.com/pulpfree/gdps-fs-dwnld/validate"
+	"github.com/pulpfree/lambda-utils/pres"
 )
 
 var cfg *config.Config
@@ -42,58 +41,28 @@ type SignedURL struct {
 
 // HandleRequest function
 func HandleRequest(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
 	hdrs := make(map[string]string)
 	hdrs["Content-Type"] = "application/json"
+	hdrs["Access-Control-Allow-Origin"] = "*"
+	hdrs["Access-Control-Allow-Methods"] = "GET,OPTIONS,POST,PUT"
+	hdrs["Access-Control-Allow-Headers"] = "Authorization,Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
+
+	if req.HTTPMethod == "OPTIONS" {
+		return events.APIGatewayProxyResponse{Body: string("null"), Headers: hdrs, StatusCode: 200}, nil
+	}
+
 	t := time.Now()
 
 	// If this is a ping test, intercept and return
 	if req.HTTPMethod == "GET" {
 		log.Info("Ping test in handleRequest")
-		return gatewayResponse(Response{
+		return pres.ProxyRes(pres.Response{
 			Code:      200,
 			Data:      "pong",
 			Status:    "success",
 			Timestamp: t.Unix(),
-		}, hdrs), nil
-	}
-
-	// Check for auth header
-	if req.Headers["Authorization"] == "" {
-		return gatewayResponse(Response{
-			Code:      401,
-			Message:   "Missing Authorization header",
-			Status:    "error",
-			Timestamp: t.Unix(),
-		}, hdrs), nil
-	}
-
-	// Set auth config
-	auth, err := auth.New(&auth.Config{
-		ClientID:       cfg.CognitoClientID,
-		PoolID:         cfg.CognitoPoolID,
-		Region:         cfg.CognitoRegion,
-		JwtAccessToken: req.Headers["Authorization"],
-	})
-	if err != nil {
-		return gatewayResponse(Response{
-			Code:      500,
-			Message:   fmt.Sprintf("authentication error: %s", err.Error()),
-			Status:    "error",
-			Timestamp: t.Unix(),
-		}, hdrs), nil
-	}
-
-	// Validate JWT Token
-	err = auth.Validate()
-	if err != nil {
-		return gatewayResponse(Response{
-			Code:      401,
-			Message:   fmt.Sprintf("token validation error: %s", err.Error()),
-			Status:    "error",
-			Timestamp: t.Unix(),
-		}, hdrs), nil
+		}, hdrs, nil), nil
 	}
 
 	// Set and validate request params
@@ -101,65 +70,43 @@ func HandleRequest(req events.APIGatewayProxyRequest) (events.APIGatewayProxyRes
 	json.Unmarshal([]byte(req.Body), &r)
 	reqVars, err := validate.RequestInput(r)
 	if err != nil {
-		return gatewayResponse(Response{
-			Code:      500,
-			Message:   fmt.Sprintf("request validation error: %s", err.Error()),
-			Status:    "error",
+		return pres.ProxyRes(pres.Response{
 			Timestamp: t.Unix(),
-		}, hdrs), nil
+		}, hdrs, err), nil
 	}
 
 	// Process request
 	report, err := fuelsale.New(reqVars, cfg, req.Headers["Authorization"])
 	if err != nil {
-		return gatewayResponse(Response{
-			Code:      500,
-			Message:   fmt.Sprintf("report fetch error: %s", err.Error()),
-			Status:    "error",
+		return pres.ProxyRes(pres.Response{
 			Timestamp: t.Unix(),
-		}, hdrs), nil
+		}, hdrs, err), nil
 	}
 
 	// var url string
 	err = report.Create()
 	if err != nil {
-		return gatewayResponse(Response{
-			Code:      500,
-			Message:   fmt.Sprintf("report create error: %s", err.Error()),
-			Status:    "error",
+		return pres.ProxyRes(pres.Response{
 			Timestamp: t.Unix(),
-		}, hdrs), nil
+		}, hdrs, err), nil
 	}
 
 	url, err := report.CreateSignedURL()
 	if err != nil {
-		return gatewayResponse(Response{
-			Code:      500,
-			Message:   fmt.Sprintf("report create url error: %s", err.Error()),
-			Status:    "error",
+		return pres.ProxyRes(pres.Response{
 			Timestamp: t.Unix(),
-		}, hdrs), nil
+		}, hdrs, err), nil
 	}
 	log.Infof("signed url created %s", url)
 
-	return gatewayResponse(Response{
+	return pres.ProxyRes(pres.Response{
 		Code:      201,
 		Data:      SignedURL{URL: url},
 		Status:    "success",
 		Timestamp: t.Unix(),
-	}, hdrs), nil
+	}, hdrs, nil), nil
 }
 
 func main() {
 	lambda.Start(HandleRequest)
-}
-
-func gatewayResponse(resp Response, hdrs map[string]string) events.APIGatewayProxyResponse {
-
-	body, _ := json.Marshal(&resp)
-	if resp.Status == "error" {
-		log.Errorf("Error: status: %s, code: %d, message: %s", resp.Status, resp.Code, resp.Message)
-	}
-
-	return events.APIGatewayProxyResponse{Body: string(body), Headers: hdrs, StatusCode: resp.Code}
 }
