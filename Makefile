@@ -31,7 +31,7 @@ run: build
 	sam local start-api -n env.json
 
 awspackage:
-	aws cloudformation package \
+	@aws cloudformation package \
   --template-file ${FILE_TEMPLATE} \
   --output-template-file ${FILE_PACKAGE} \
   --s3-bucket $(AWS_LAMBDA_BUCKET) \
@@ -40,7 +40,7 @@ awspackage:
 	--region $(AWS_REGION)
 
 awsdeploy:
-	aws cloudformation deploy \
+	@aws cloudformation deploy \
   --template-file ${FILE_PACKAGE} \
   --stack-name $(AWS_STACK_NAME) \
   --capabilities CAPABILITY_IAM \

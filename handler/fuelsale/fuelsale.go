@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	pres "github.com/pulpfree/lambda-go-proxy-response"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -12,7 +13,6 @@ import (
 	"github.com/pulpfree/gdps-fs-dwnld/fuelsale"
 	"github.com/pulpfree/gdps-fs-dwnld/model"
 	"github.com/pulpfree/gdps-fs-dwnld/validate"
-	"github.com/pulpfree/lambda-utils/pres"
 )
 
 var cfg *config.Config
@@ -23,15 +23,6 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-// Response data format
-type Response struct {
-	Code      int         `json:"code"`      // HTTP status code
-	Data      interface{} `json:"data"`      // Data payload
-	Message   string      `json:"message"`   // Error or status message
-	Status    string      `json:"status"`    // Status code (error|fail|success)
-	Timestamp int64       `json:"timestamp"` // Machine-readable UTC timestamp in nanoseconds since EPOCH
 }
 
 // SignedURL struct

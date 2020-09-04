@@ -38,7 +38,7 @@ Resources:
               - AuthLambda
               - Arn
             Identity:
-              ReauthorizeEvery: 1
+              ReauthorizeEvery: 300
       GatewayResponses:
         UNAUTHORIZED:
           StatusCode: 401
@@ -66,7 +66,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: go1.x
-      CodeUri: s3://gdps-lambdas/fs-dwnld/65ec6b7555d70750004b76e772aaa0be
+      CodeUri: s3://gdps-lambdas/fs-dwnld/ed3de7c0787db4f6c350e1f8635c0afd
       Handler: /fuelsale
       Role:
         Fn::GetAtt:
@@ -101,7 +101,7 @@ Resources:
   AuthLambda:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://gdps-lambdas/fs-dwnld/65ec6b7555d70750004b76e772aaa0be
+      CodeUri: s3://gdps-lambdas/fs-dwnld/ed3de7c0787db4f6c350e1f8635c0afd
       Handler: /authorizer
       Runtime: go1.x
       Role:
@@ -229,13 +229,35 @@ Outputs:
     Description: API ARN
     Value:
       Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/
-  FQDN:
-    Description: Domain Name
+  ApiFQDN:
+    Description: API Domain Name
     Value:
       Ref: ParamCustomDomainName
+  ApiURL:
+    Description: API Url
+    Value:
+      Fn::Sub: https://${ParamCustomDomainName}/report
   LambdaArn:
     Description: Lambda ARN
     Value:
       Fn::GetAtt:
       - Lambda
+      - Arn
+  AuthLambdaArn:
+    Description: Authorizer Lambda ARN
+    Value:
+      Fn::GetAtt:
+      - AuthLambda
+      - Arn
+  LambdaRoleArn:
+    Description: Lambda Role ARN
+    Value:
+      Fn::GetAtt:
+      - LambdaRole
+      - Arn
+  AuthLambdaRoleArn:
+    Description: Authorizer Lambda Role ARN
+    Value:
+      Fn::GetAtt:
+      - AuthLambdaRole
       - Arn

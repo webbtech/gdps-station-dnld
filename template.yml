@@ -38,8 +38,9 @@ Resources:
           LambdaTokenAuthorizer:
             FunctionArn: !GetAtt AuthLambda.Arn
             Identity:
-              # ReauthorizeEvery: 300
-              ReauthorizeEvery: 1 # for testing
+              ReauthorizeEvery: 300
+              # ReauthorizeEvery: 1 # for testing
+      
       # Documentation for below: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#gateway-response-object
       # Oddly, this property does not work with sam local
       GatewayResponses:
@@ -52,6 +53,7 @@ Resources:
               Access-Control-Expose-Headers: "'WWW-Authenticate'"
               Access-Control-Allow-Origin: "'*'"
               Access-Control-Allow-Headers: "'*'"
+      
       # Docs for this at: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#domain-configuration-object
       Domain:
         DomainName: !Ref ParamCustomDomainName
@@ -224,10 +226,21 @@ Outputs:
   ApiArn:
     Description: "API ARN"
     Value: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/"
-  FQDN:
-    Description: "Domain Name"
-    Value: 
-      Ref: ParamCustomDomainName
+  ApiFQDN:
+    Description: "API Domain Name"
+    Value: !Ref ParamCustomDomainName
+  ApiURL:
+    Description: "API Url"
+    Value: !Sub "https://${ParamCustomDomainName}/fuelsale"
   LambdaArn:
     Description: "Lambda ARN"
-    Value: !GetAtt Lambda.Arn   
+    Value: !GetAtt Lambda.Arn
+  AuthLambdaArn:
+    Description: "Authorizer Lambda ARN"
+    Value: !GetAtt AuthLambda.Arn
+  LambdaRoleArn:
+    Description: "Lambda Role ARN"
+    Value: !GetAtt LambdaRole.Arn
+  AuthLambdaRoleArn:
+    Description: "Authorizer Lambda Role ARN"
+    Value: !GetAtt AuthLambdaRole.Arn
