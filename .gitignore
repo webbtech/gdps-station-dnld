@@ -19,6 +19,6 @@ vendor/
 .env
 dist/
 docs/ssm.md
-package.yaml
+package*.yml
 scratch
 tmp

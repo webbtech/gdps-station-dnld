@@ -55,9 +55,9 @@ func (s *S3Service) PutFile(prefix string, file *bytes.Buffer) (key string, err 
 }
 
 // GetSignedURL method
-func (s *S3Service) GetSignedURL(prefix string, file *bytes.Buffer) (signedURL string, err error) {
+func (s *S3Service) GetSignedURL(fileObject string, file *bytes.Buffer) (signedURL string, err error) {
 
-	_, err = s.PutFile(prefix, file)
+	_, err = s.PutFile(fileObject, file)
 	if err != nil {
 		log.Errorf("Failed to upload file: %s", err.Error())
 		return "", err
@@ -66,7 +66,7 @@ func (s *S3Service) GetSignedURL(prefix string, file *bytes.Buffer) (signedURL s
 	svc := s3.New(s.session)
 	req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
 		Bucket: aws.String(s.cfg.S3Bucket),
-		Key:    aws.String(prefix),
+		Key:    aws.String(fileObject),
 	})
 
 	urlStr, err := req.Presign(15 * time.Minute)

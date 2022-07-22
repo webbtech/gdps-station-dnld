@@ -1,0 +1,32 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory `/Users/rondyck/ClientProjects/Gales/dips/services/station-dnld'
+echo -n "Your environment is ? [y/N] " && read ans && [ ${ans:-N} = y ]
+rm -rf dist
+mkdir -p dist
+for dir in `ls handler`; do \
+		GOOS=linux go build -o dist/$dir github.com/pulpfree/gdps-fs-dwnld/handler/$dir; \
+	done
+cp ./config/defaults.yaml dist/
+echo "build successful"
+aws cloudformation package \
+  --template-file template.yml \
+  --output-template-file package-.yml \
+  --s3-bucket gdps-lambdas \
+  --s3-prefix station-dnld- \
+  --profile default \
+	--region ca-central-1
+aws cloudformation deploy \
+  --template-file package-.yml \
+  --stack-name gdps-station-dnld- \
+  --capabilities CAPABILITY_IAM \
+  --profile default \
+	--parameter-overrides \
+		ParamCertificateArn="arn:aws:acm:ca-central-1:407205661819:certificate/f091e625-200d-451f-8cee-560505766eb2" \
+		ParamCustomDomainName=station-dnld-.gdps.pfapi.io \
+		ParamENV= \
+		ParamHostedZoneId=ZBV8ZSUGOCIHP \
+		ParamProjectName=gdps-station-dnld- \
+		ParamReportBucket= \
+		ParamUserPoolArn="arn:aws:cognito-idp:ca-central-1:407205661819:userpool/ca-central-1_lolwfYIAr"
+make: Leaving directory `/Users/rondyck/ClientProjects/Gales/dips/services/station-dnld'
+ 

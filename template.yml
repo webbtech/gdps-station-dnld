@@ -4,24 +4,31 @@ Transform: AWS::Serverless-2016-10-31
 Description: Gales Dips Fuel Sales Report Download Service
 
 Parameters:
-  IAMUsername:
-    Description: Username of the IAM user for this service
+  ParamBillTo:
+    Description: Required. Value of Tag key BillTo
     Type: String
-    Default: sysadmin
+    Default: Gales
   ParamCertificateArn:
     Description: Domain Certificate Arn
     Type: String
   ParamCustomDomainName:
     Description: Custom Domain Name
     Type: String
+  ParamENV:
+    Description: Stage environment
+    Type: String
   ParamHostedZoneId:
     Description: Hosted Zone ID
     Type: String
-  ParamKMSKeyID:
-    Description: KMS key id
-    Type: String
   ParamProjectName:
     Description: Project name
+    Type: String
+  ParamReportBucket:
+    Description: AWS S3 report bucket
+    Type: String
+    Default: gdps-reports
+  ParamUserPoolArn:
+    Description: Cognito User Pool Arn
     Type: String
 
 Resources:
@@ -31,14 +38,19 @@ Resources:
     DependsOn: Lambda
     Properties:
       StageName: Prod
-      EndpointConfiguration: REGIONAL
+      EndpointConfiguration: 
+        Type: REGIONAL
+      Cors: # NOTE: these could be tightened up some
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'" # TODO: add an origin here
       Auth:
         DefaultAuthorizer: LambdaTokenAuthorizer
         Authorizers:
           LambdaTokenAuthorizer:
-            FunctionArn: !GetAtt AuthLambda.Arn
-            Identity:
-              ReauthorizeEvery: 300
+            UserPoolArn: !Ref ParamUserPoolArn
+            # Identity:
+              # ReauthorizeEvery: 300
               # ReauthorizeEvery: 1 # for testing
       
       # Documentation for below: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#gateway-response-object
@@ -76,9 +88,9 @@ Resources:
       MemorySize: 256
       Environment:
         Variables:
-          Stage: prod
+          Stage: !Ref ParamENV
       Tags:
-        BillTo: 'Gales'
+        BillTo: !Ref ParamBillTo
       Events:
         Ping:
           Type: Api
@@ -96,18 +108,6 @@ Resources:
             RestApiId: !Ref RestApi
             Auth:
               Authorizer: LambdaTokenAuthorizer
-        
-  AuthLambda:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./dist
-      Handler: /authorizer
-      Runtime: go1.x
-      Role: !GetAtt AuthLambdaRole.Arn
-      Timeout: 10
-      MemorySize: 256
-      Tags:
-        BillTo: 'Gales'
 
   LambdaRole:
     Type: AWS::IAM::Role
@@ -133,26 +133,6 @@ Resources:
             - logs:CreateLogStream
             - logs:PutLogEvents
             Resource: '*'
-      - PolicyName: FunctionParameterAccess
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - ssm:GetParameter*
-            - ssm:GetParametersByPath
-            Resource:
-              Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/prod/${ParamProjectName}*
-      - PolicyName: FunctionKMS
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - kms:Decrypt
-            - kms:DescribeKey
-            Resource:
-              Fn::Sub: arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${ParamKMSKeyID}
       - PolicyName: FunctionXRayAccess
         PolicyDocument:
           Version: '2012-10-17'
@@ -170,50 +150,7 @@ Resources:
             Action:
             - s3:*
             Resource: 
-              Fn::Sub: arn:aws:s3:::${ParamProjectName}/reports/*
-
-  AuthLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Policies:
-      - PolicyName: FunctionParameterAccess
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - ssm:GetParametersByPath
-            Resource:
-              Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/prod/${ParamProjectName}*
-      - PolicyName: FunctionKMS
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - kms:Decrypt
-            - kms:DescribeKey
-            Resource:
-              Fn::Sub: arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${ParamKMSKeyID}
-      - PolicyName: FunctionLogAccess
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-            Resource: '*'
+              Fn::Sub: arn:aws:s3:::${ParamReportBucket}/*
 
 Outputs:
   ApiId:
@@ -235,12 +172,6 @@ Outputs:
   LambdaArn:
     Description: "Lambda ARN"
     Value: !GetAtt Lambda.Arn
-  AuthLambdaArn:
-    Description: "Authorizer Lambda ARN"
-    Value: !GetAtt AuthLambda.Arn
   LambdaRoleArn:
     Description: "Lambda Role ARN"
     Value: !GetAtt LambdaRole.Arn
-  AuthLambdaRoleArn:
-    Description: "Authorizer Lambda Role ARN"
-    Value: !GetAtt AuthLambdaRole.Arn

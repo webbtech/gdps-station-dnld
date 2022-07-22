@@ -2,15 +2,11 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
-	"strings"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ssm"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -23,29 +19,17 @@ type Config struct {
 
 // defaults struct
 type defaults struct {
-	AWSRegion        string `yaml:"AWSRegion"`
-	S3Bucket         string `yaml:"S3Bucket"`
-	S3FilePrefix     string `yaml:"S3FilePrefix"`
-	CognitoClientID  string `yaml:"CognitoClientID"`
-	CognitoPoolID    string `yaml:"CognitoPoolID"`
-	CognitoRegion    string `yaml:"CognitoRegion"`
-	DynamoAPIVersion string `yaml:"APIVersion"`
-	DynamoRegion     string `yaml:"Region"`
-	GraphqlURI       string `yaml:"GraphqlURI"`
-	SsmPath          string `yaml:"SsmPath"`
-	Stage            string `yaml:"Stage"`
+	AWSRegion  string `yaml:"AWSRegion"`
+	S3Bucket   string `yaml:"S3Bucket"`
+	GraphqlURI string `yaml:"GraphqlURI"`
+	Stage      string `yaml:"Stage"`
 }
 
 type config struct {
-	AWSRegion       string
-	S3Bucket        string
-	S3FilePrefix    string
-	CognitoClientID string
-	CognitoPoolID   string
-	CognitoRegion   string
-	Dynamo          *Dynamo
-	GraphqlURI      string
-	Stage           StageEnvironment
+	AWSRegion  string
+	S3Bucket   string
+	GraphqlURI string
+	Stage      StageEnvironment
 }
 
 // Dynamo struct
@@ -74,28 +58,16 @@ var (
 // Load method
 func (c *Config) Load() (err error) {
 
-	err = c.setDefaults()
-	if err != nil {
-		return err
-	}
-	err = c.setEnvVars()
-	if err != nil {
-		return err
-	}
-	err = c.setSSMParams()
-	if err != nil {
-		return err
-	}
-	err = c.setDynamo()
-	if err != nil {
-		return err
-	}
-	err = c.setFinal()
-	if err != nil {
+	if err = c.setDefaults(); err != nil {
 		return err
 	}
 
-	// c.setDBConnectURL()
+	if err = c.setEnvVars(); err != nil {
+		return err
+	}
+
+	c.setFinal()
+
 	return err
 }
 
@@ -127,33 +99,31 @@ func (c *Config) setDefaults() (err error) {
 }
 
 // validateStage method to validate Stage value
-func (c *Config) validateStage() error {
+func (c *Config) validateStage() (err error) {
 
-	validEnv := false
+	validEnv := true
 
 	switch defs.Stage {
 	case "dev":
+	case "development":
 		c.Stage = DevEnv
-		validEnv = true
 	case "stage":
 		c.Stage = StageEnv
-		validEnv = true
 	case "test":
 		c.Stage = TestEnv
-		validEnv = true
 	case "prod":
 		c.Stage = ProdEnv
-		validEnv = true
 	case "production":
 		c.Stage = ProdEnv
-		validEnv = true
+	default:
+		validEnv = false
 	}
 
 	if !validEnv {
-		return errors.New("Invalid Stage type")
+		return errors.New(fmt.Sprintf("Invalid StageEnvironment requested: %s", defs.Stage))
 	}
 
-	return nil
+	return err
 }
 
 // sets any environment variables that match the default struct fields
@@ -177,66 +147,9 @@ func (c *Config) setEnvVars() (err error) {
 	return err
 }
 
-func (c *Config) setSSMParams() (err error) {
-
-	s := []string{"", string(c.GetStageEnv()), defs.SsmPath}
-	paramPath := aws.String(strings.Join(s, "/"))
-
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(defs.AWSRegion),
-	})
-	if err != nil {
-		return err
-	}
-
-	svc := ssm.New(sess)
-	res, err := svc.GetParametersByPath(&ssm.GetParametersByPathInput{
-		Path:           paramPath,
-		WithDecryption: aws.Bool(true),
-	})
-	if err != nil {
-		return err
-	}
-
-	paramLen := len(res.Parameters)
-	if paramLen == 0 {
-		// err = fmt.Errorf("Error fetching ssm params, total number found: %d", paramLen)
-		return nil
-	}
-
-	// Get struct keys so we can test before attempting to set
-	t := reflect.ValueOf(defs).Elem()
-	for _, r := range res.Parameters {
-		paramName := strings.Split(*r.Name, "/")[3]
-		structKey := t.FieldByName(paramName)
-		if structKey.IsValid() {
-			structKey.Set(reflect.ValueOf(*r.Value))
-		}
-	}
-	return err
-}
-
-// set dynamo vars
-func (c *Config) setDynamo() (err error) {
-
-	c.Dynamo = &Dynamo{
-		APIVersion: defs.DynamoAPIVersion,
-		Region:     defs.DynamoRegion,
-	}
-	return err
-}
-
 // Copies required fields from the defaults to the Config struct
-func (c *Config) setFinal() (err error) {
-
+func (c *Config) setFinal() {
 	c.AWSRegion = defs.AWSRegion
-	c.CognitoClientID = defs.CognitoClientID
-	c.CognitoPoolID = defs.CognitoPoolID
-	c.CognitoRegion = defs.CognitoRegion
 	c.GraphqlURI = defs.GraphqlURI
 	c.S3Bucket = defs.S3Bucket
-	c.S3FilePrefix = defs.S3FilePrefix
-	err = c.validateStage()
-
-	return err
 }

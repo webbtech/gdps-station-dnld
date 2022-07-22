@@ -1,10 +1,19 @@
+# The KEY environment variable must be set to either stage or prod
+# KEY is confirmed below in the check_env directive
+# example:
+# stage: ENV=stage make
+# production: ENV=prod make
+
 include .env
 
 # found yolo at: https://azer.bike/journal/a-good-makefile-for-go/
 
 AWS_STACK_NAME ?= $(PROJECT_NAME)
 
-default: build awspackage awsdeploy
+default: check_env build awspackage awsdeploy
+
+check_env:
+	@echo -n "Your environment is $(ENV)? [y/N] " && read ans && [ $${ans:-N} = y ]
 
 clean:
 	@rm -rf dist
@@ -14,7 +23,6 @@ build: clean
 	@for dir in `ls handler`; do \
 		GOOS=linux go build -o dist/$$dir github.com/pulpfree/gdps-fs-dwnld/handler/$$dir; \
 	done
-	@GOOS=linux go build -o dist/authorizer github.com/pulpfree/gdps-fs-dwnld/authorizer;
 	@cp ./config/defaults.yaml dist/
 	@echo "build successful"
 
@@ -48,10 +56,11 @@ awsdeploy:
 	--parameter-overrides \
 		ParamCertificateArn=$(CERTIFICATE_ARN) \
 		ParamCustomDomainName=$(CUSTOM_DOMAIN_NAME) \
+		ParamENV=$(ENV) \
 		ParamHostedZoneId=$(HOSTED_ZONE_ID) \
-		ParamKMSKeyID=$(KMS_KEY_ID) \
 		ParamProjectName=$(PROJECT_NAME) \
-		ParamReportBucket=${AWS_REPORT_BUCKET}
+		ParamReportBucket=${AWS_REPORT_BUCKET} \
+		ParamUserPoolArn=$(USER_POOL_ARN)
 
 describe:
 	@aws cloudformation describe-stacks \

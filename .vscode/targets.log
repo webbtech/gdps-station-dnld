@@ -1,0 +1,367 @@
+make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+# GNU Make 3.81
+# Copyright (C) 2006  Free Software Foundation, Inc.
+# This is free software; see the source for copying conditions.
+# There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+# This program built for i386-apple-darwin11.3.0
+ 
+make: *** No rule to make target `all'.  Stop.
+
+
+# Make data base, printed on Fri Jul 22 09:48:11 2022
+
+# Variables
+
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# automatic
+ 
+?F = $(notdir $?)
+# makefile (from `.env', line 3)
+AWS_LAMBDA_BUCKET = gdps-lambdas
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# makefile (from `.env', line 6)
+CERTIFICATE_ARN = "arn:aws:acm:ca-central-1:407205661819:certificate/f091e625-200d-451f-8cee-560505766eb2"
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# automatic
+@F = $(notdir $@)
+# makefile
+CURDIR := /Users/rondyck/ClientProjects/Gales/dips/services/station-dnld
+# makefile
+SHELL = /bin/sh
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
+# environment
+_ = /usr/bin/make
+# makefile (from `.env', line 1)
+MAKEFILE_LIST :=  Makefile .env
+# environment
+MONGOBIN = /usr/local/opt/mongodb-community/bin
+# makefile (from `.env', line 12)
+USER_POOL_ARN = "arn:aws:cognito-idp:ca-central-1:407205661819:userpool/ca-central-1_lolwfYIAr"
+# makefile (from `.env', line 9)
+FILE_TEMPLATE = template.yml
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# environment
+__CFBundleIdentifier = com.microsoft.VSCode
+# environment
+VSCODE_CWD = /
+# environment
+GOPROXY = https://proxy.golang.org,direct
+# environment
+PATH = /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/VMware Fusion.app/Contents/Public:/Library/Apple/usr/bin:/Users/rondyck/go/bin:/usr/local/opt/mongodb-community/bin
+# environment
+LSCOLORS = Gxfxcxdxbxegedabagacad
+# environment
+GOPATH = /Users/rondyck/go
+# environment
+ELECTRON_RUN_AS_NODE = 1
+# default
+.FEATURES := target-specific order-only second-expansion else-if archives jobserver check-symlink
+# environment
+SSH_AUTH_SOCK = /private/tmp/com.apple.launchd.YQqjrHHeTv/Listeners
+# automatic
+%F = $(notdir $%)
+# environment
+GOBIN = /Users/rondyck/go/bin
+# makefile (from `.env', line 1)
+AWS_ACCOUNT_ID = 407205661819
+# environment
+PWD = /Users/rondyck/ClientProjects/Gales/dips/services/station-dnld
+# environment
+ORIGINAL_XDG_CURRENT_DESKTOP = undefined
+# environment
+GOMODCACHE = /Users/rondyck/go/pkg/mod
+# environment
+HOME = /Users/rondyck
+# default
+MAKEFILEPATH := /Applications/Xcode.app/Contents/Developer/Makefiles
+# environment
+VSCODE_CODE_CACHE_PATH = /Users/rondyck/Library/Application Support/Code/CachedData/3b889b090b5ad5793f524b5d1d39fda662b96a2a
+# environment
+LOGNAME = rondyck
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+# environment
+NVM_CD_FLAGS = -q
+# environment
+ZSH = /Users/rondyck/.oh-my-zsh
+# makefile (from `Makefile', line 11)
+AWS_STACK_NAME = $(PROJECT_NAME)
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# environment
+XPC_FLAGS = 0x0
+# default
+MAKE = $(MAKE_COMMAND)
+# default
+MAKECMDGOALS := all
+# environment
+SHLVL = 1
+# makefile (from `.env', line 4)
+AWS_PROFILE = default
+# default
+MAKE_VERSION := 3.81
+# environment
+USER = rondyck
+# makefile
+.DEFAULT_GOAL := default
+# environment
+LESS = -R
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# default
+MAKE_COMMAND := /Applications/Xcode.app/Contents/Developer/usr/bin/make
+# default
+.VARIABLES := 
+# makefile (from `.env', line 8)
+FILE_PACKAGE = package-$(ENV).yml
+# environment
+TMPDIR = /var/folders/4w/_jj258rj5jbcmn2qy8xm70sh0000gn/T/
+# automatic
+*F = $(notdir $*)
+# environment
+VSCODE_IPC_HOOK = /Users/rondyck/Library/Application Support/Code/1.69.2-main.sock
+# environment
+MallocNanoZone = 0
+# makefile
+MAKEFLAGS = Rrqp
+# environment
+MFLAGS = -Rrqp
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+NVM_DIR = /Users/rondyck/.nvm
+# environment
+XPC_SERVICE_NAME = application.com.microsoft.VSCode.482808643.482808649
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# automatic
++F = $(notdir $+)
+# makefile (from `.env', line 10)
+HOSTED_ZONE_ID = ZBV8ZSUGOCIHP
+# environment
+__CF_USER_TEXT_ENCODING = 0x1F5:0x0:0x52
+# environment
+COMMAND_MODE = unix2003
+# default
+MAKEFILES := 
+# makefile (from `.env', line 7)
+CUSTOM_DOMAIN_NAME = station-dnld-$(ENV).gdps.pfapi.io
+# automatic
+<F = $(notdir $<)
+# makefile (from `.env', line 11)
+PROJECT_NAME = gdps-station-dnld-$(ENV)
+# environment
+PAGER = less
+# environment
+LC_ALL = C
+# automatic
+^F = $(notdir $^)
+ 
+# default
+SUFFIXES := 
+# default
+.INCLUDE_DIRS = /usr/local/include
+# makefile (from `.env', line 5)
+AWS_REGION = ca-central-1
+# makefile (from `.env', line 2)
+AWS_BUCKET_PREFIX = station-dnld-$(ENV)
+# environment
+MAKELEVEL := 0
+# environment
+LANG = C
+# environment
+VSCODE_PID = 43001
+# variable set hash-table stats:
+# Load=82/1024=8%, Rehash=0, Collisions=5/109=5%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# . (device 16777220, inode 483034864): 27 files, no impossibilities.
+
+# 27 files, no impossibilities in 1 directories.
+
+# Implicit Rules
+
+# No implicit rules.
+
+# Files
+
+# Not a target:
+all:
+#  Command-line target.
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has not been updated.
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/0=0%
+
+# Not a target:
+.SUFFIXES:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2022-07-21 14:09:45
+#  File has been updated.
+#  Successfully updated.
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/0=0%
+
+validate:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 36):
+	sam validate
+	
+
+build: clean
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 23):
+	@for dir in `ls handler`; do \
+	GOOS=linux go build -o dist/$$dir github.com/pulpfree/gdps-fs-dwnld/handler/$$dir; \
+	done
+	@cp ./config/defaults.yaml dist/
+	@echo "build successful"
+	
+
+# Not a target:
+.env:
+#  Implicit rule search has been done.
+#  Last modified 2022-07-21 14:23:01
+#  File has been updated.
+#  Successfully updated.
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/0=0%
+
+default: check_env build awspackage awsdeploy
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+watch:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 33):
+	@yolo -i . -e vendor -e dist -c "make build"
+	
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+run: build
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 39):
+	sam local start-api -n env.json
+	
+
+clean:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 19):
+	@rm -rf dist
+	@mkdir -p dist
+	
+
+awsdeploy:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 51):
+	@aws cloudformation deploy \
+	--template-file ${FILE_PACKAGE} \
+	--stack-name $(AWS_STACK_NAME) \
+	--capabilities CAPABILITY_IAM \
+	--profile $(AWS_PROFILE) \
+	--parameter-overrides \
+	ParamCertificateArn=$(CERTIFICATE_ARN) \
+	ParamCustomDomainName=$(CUSTOM_DOMAIN_NAME) \
+	ParamENV=$(ENV) \
+	ParamHostedZoneId=$(HOSTED_ZONE_ID) \
+	ParamProjectName=$(PROJECT_NAME) \
+	ParamReportBucket=${AWS_REPORT_BUCKET} \
+	ParamUserPoolArn=$(USER_POOL_ARN)
+	
+
+check_env:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 16):
+	@echo -n "Your environment is $(ENV)? [y/N] " && read ans && [ $${ans:-N} = y ]
+	
+
+outputs:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 71):
+	@ make describe \
+	| jq -r '.Stacks[0].Outputs'
+	
+
+describe:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 66):
+	@aws cloudformation describe-stacks \
+	--region $(AWS_REGION) \
+	--stack-name $(AWS_STACK_NAME)
+	
+
+awspackage:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  commands to execute (from `Makefile', line 42):
+	@aws cloudformation package \
+	--template-file ${FILE_TEMPLATE} \
+	--output-template-file ${FILE_PACKAGE} \
+	--s3-bucket $(AWS_LAMBDA_BUCKET) \
+	--s3-prefix $(AWS_BUCKET_PREFIX) \
+	--profile $(AWS_PROFILE) \
+	--region $(AWS_REGION)
+	
+
+# files hash-table stats:
+# Load=16/1024=2%, Rehash=0, Collisions=0/35=0%
+# VPATH Search Paths
+
+# No `vpath' search paths.
+
+# No general (`VPATH' variable) search path.
+
+# # of strings in strcache: 2
+# # of strcache buffers: 1
+# strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
+# strcache free: total = 4082 / max = 4082 / min = 4082 / avg = 4082
+
+# Finished Make data base on Fri Jul 22 09:48:11 2022
+
+ 
